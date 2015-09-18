@@ -9,9 +9,12 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "lodash": "^3.10.1",
     "material-ui": "^0.11.1",
     "react": "^0.13.3",
-    "react-tap-event-plugin": "^0.1.7"
+    "react-tap-event-plugin": "^0.1.7",
+    "reflux": "^0.2.12",
+    "xr": "^0.1.13"
   },
   "devDependencies": {
     "babel-core": "^5.8.24",
