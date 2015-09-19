@@ -4,7 +4,7 @@ export function GetMeta() {
 	return xr.get("admin/meta");
 }
 export function UpdateMeta(meta) {
-	return xr.put("admin/meta");
+	return xr.put("admin/meta", meta);
 }
 export function CreateBucket(bucket) {
 	return xr.post("admin/buckets", bucket);

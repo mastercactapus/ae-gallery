@@ -11,7 +11,8 @@ module.exports = {
 	},
 	module: {
 		loaders: [
-			{ test: /\.jsx?$/, loader: "babel-loader" }
+			{ test: /\.jsx?$/, include: path.join(__dirname, "browser"), loader: "babel", query: { optional: ["es7.decorators"] } },
+			{ test: /\.css$/, loader: "style!css" }
 		]
 	}
 };

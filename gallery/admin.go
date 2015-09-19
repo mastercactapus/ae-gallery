@@ -3,6 +3,7 @@ package gallery
 import (
 	"encoding/json"
 	"github.com/satori/go.uuid"
+	"golang.org/x/net/context"
 	"google.golang.org/appengine"
 	"google.golang.org/appengine/datastore"
 	"google.golang.org/appengine/log"
@@ -50,6 +51,9 @@ func handleMeta(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
 		}
+		if m.Buckets == nil {
+			m.Buckets = []string{}
+		}
 		_, err = datastore.Put(c, key, &m)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -64,6 +68,9 @@ func handleMeta(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			log.Errorf(c, "put bucket: %s", err.Error())
 			return
+		}
+		if m.Buckets == nil {
+			m.Buckets = []string{}
 		}
 		w.Header().Set("Content-Type", "application/json")
 		err = json.NewEncoder(w).Encode(&m)
@@ -91,7 +98,23 @@ func handleBuckets(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		b.ID = uuid.NewV4().String()
-		_, err = datastore.Put(c, datastore.NewKey(c, "Bucket", b.ID, 0, nil), &b)
+
+		err = datastore.RunInTransaction(c, func(c context.Context) error {
+			_, err := datastore.Put(c, datastore.NewKey(c, "Bucket", b.ID, 0, nil), &b)
+			if err != nil {
+				return err
+			}
+			metaKey := datastore.NewKey(c, "Meta", "main", 0, nil)
+			var m Meta
+			err = datastore.Get(c, metaKey, &m)
+			if err != nil {
+				return err
+			}
+			m.Buckets = append(m.Buckets, b.ID)
+			_, err = datastore.Put(c, metaKey, &m)
+			return err
+		}, &datastore.TransactionOptions{XG: true})
+
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			log.Errorf(c, "create bucket: %s", err.Error())

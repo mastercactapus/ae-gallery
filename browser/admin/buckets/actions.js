@@ -2,30 +2,32 @@ import Reflux from "reflux";
 import * as API from "../api.js";
 import _ from "lodash";
 
-export default var BucketActions = Reflux.createActions({
+var BucketActions = Reflux.createActions({
 	"loadBuckets": { children: ["completed", "failed"] },
 	"loadBucket": { children: ["completed", "failed"] },
 	"updateBucket": { children: ["completed", "failed"] },
 	"removeBucket": { children: ["completed", "failed"] },
 	"addBucket": { children: ["completed", "failed"] },
-	"reorderImage",
-	"setEnabled",
-	"setName",
-	"setCaption"
+	"reorderImage": {},
+	"setEnabled": {},
+	"setName": {},
+	"setCaption": {}
 });
 
-MetaActions.loadBuckets.listen(function(){
+BucketActions.loadBuckets.listen(function(){
 	API.GetBuckets().then(this.completed, this.failed);
 });
-MetaActions.loadBucket.listen(function(id){
+BucketActions.loadBucket.listen(function(id){
 	API.GetBucket(id).then(this.completed, this.failed);
 });
-MetaActions.updateBucket.listen(function(data){
+BucketActions.updateBucket.listen(function(data){
 	API.UpdateBucket(data).then(this.completed, _.partial(this.failed, data));
 });
-MetaActions.addBucket.listen(function(data){
+BucketActions.addBucket.listen(function(data){
 	API.CreateBucket(data).then(this.completed, this.failed);
 });
-MetaActions.removeBucket.listen(function(id){
+BucketActions.removeBucket.listen(function(id){
 	API.DeleteBucket(id).then(_.partial(this.completed, id), this.failed);
 });
+
+module.exports = BucketActions;

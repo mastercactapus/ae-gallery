@@ -3,14 +3,14 @@ import MetaActions from "./actions.js";
 import BucketActions from "../buckets/actions.js";
 import _ from "lodash";
 
-export default var MetaStore = Reflux.createStore({
+var MetaStore = Reflux.createStore({
+	listenables: [MetaActions, BucketActions],
 	init: function() {
 		this.state = {
 			Title: "",
 			Buckets: [],
 		};
 		this.pendingState = null;
-		this.listenToMany(MetaActions, BucketActions);
 	},
 	onLoadMetaCompleted: function(result) {
 		this.state.Title = result.Title;
@@ -18,11 +18,11 @@ export default var MetaStore = Reflux.createStore({
 		this.trigger(this.state);
 	},
 	onUpdateMetaFailed: function(result) {
-		this.loadMeta();
+		MetaActions.loadMeta();
 	},
 	onReorderBucket: function(oldIndex, newIndex) {
 		this.state.Buckets.splice(newIndex, 0, this.state.Buckets.splice(oldIndex, 1)[0]);
-		this.updateMeta(this.state);
+		MetaActions.updateMeta(this.state);
 		this.trigger(this.state);
 	},
 	onAddBucketCompleted: function(bucket) {
@@ -34,11 +34,11 @@ export default var MetaStore = Reflux.createStore({
 		this.trigger(this.state);
 	},
 	onRemoveBucketFailed: function() {
-		this.loadMeta();
+		MetaActions.loadMeta();
 	},
 	onSetTitle: function(newTitle) {
 		this.state.Title = newTitle;
-		this.updateMeta(this.state);
+		MetaActions.updateMeta(this.state);
 		this.trigger(this.state);
 	},
 
@@ -46,3 +46,5 @@ export default var MetaStore = Reflux.createStore({
 		return this.state;
 	},
 });
+
+module.exports = MetaStore;
