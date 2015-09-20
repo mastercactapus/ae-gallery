@@ -11,15 +11,18 @@ import {
 	FontIcon, 
 	Toggle,
 	CircularProgress,
+	Snackbar,
 } from "material-ui";
 
 import MetaStore from "./meta/store.js";
 import MetaActions from "./meta/actions.js";
 import BucketStore from "./buckets/store.js";
 import BucketActions from "./buckets/actions.js";
+import ImageStore from "./images/store.js";
+import ImageActions from "./images/actions.js";
 
 import { DragSource, DropTarget, DragDropContext } from "react-dnd"
-import HTML5Backend from "react-dnd/modules/backends/HTML5";
+import HTML5Backend, {NativeTypes} from "react-dnd/modules/backends/HTML5";
 
 const bucketSource = {
 	beginDrag(props) {
@@ -40,14 +43,46 @@ const bucketTarget = {
 	  	MetaActions.reorderBucket(draggedId, ownId);
 	}
 };
-const deleteBucketTarget = {
-	drop(props, monitor, component) {
-		BucketActions.removeBucket(monitor.getItem().ID);
+
+const uploadTarget = {
+	drop(props, monitor) {
+		var images = _.filter(monitor.getItem().files, f=>{ return /^image/.test(f.type) });
+		if (images.length === 0) return;
+		_.each(images, img=>{ ImageActions.addImage(props.ID, img) });
 	}
 };
 
-@DropTarget("bucket", deleteBucketTarget, (connect, monitor)=>({ connectDropTarget: connect.dropTarget(), isOver: monitor.isOver() }))
-export class DeleteBucket extends React.Component {
+const imageSource = {
+	beginDrag(props) {
+		return {
+			ID: props.ID,
+			index: props.index,
+			bucketID: props.bucketID,
+		}
+	}
+};
+const imageTarget = {
+	hover(props, monitor, component) {
+
+	}
+};
+
+
+const deleteTarget = {
+	drop(props, monitor, component) {
+		var type = monitor.getItemType();
+		if (type === "bucket") {
+			BucketActions.removeBucket(monitor.getItem().ID);
+		} else if (type === "image") {
+			ImageActions.removeImage(monitor.getItem().ID);
+		} else {
+			console.error("Unknown type sent to delete target:", type);
+		}
+	}
+};
+
+@DropTarget(["bucket", "image"], deleteTarget, (connect, monitor)=>({ connectDropTarget: connect.dropTarget(), isOver: monitor.isOver() }))
+export class DeleteZone extends React.Component {
 	render() {
 		const { connectDropTarget, isOver } = this.props;
 
@@ -70,7 +105,28 @@ export class DeleteBucket extends React.Component {
 	}
 }
 
+@DropTarget("image", imageTarget, connect=>({ connectDropTarget: connect.dropTarget() }))
+@DragSource("image", imageSource, (connect, monitor) => ({ connectDragPreview: connect.dragPreview(), connectDragSource: connect.dragSource(), isDragging: monitor.isDragging() }))
+export class Image extends React.Component {
+	static propTypes = {
+		connectDragSource: PropTypes.func.isRequired,
+		connectDropTarget: PropTypes.func.isRequired,
+		ID: PropTypes.string.isRequired,
+		index: PropTypes.number.isRequired,
+		bucketID: PropTypes.string.isRequired,
+		isDragging: PropTypes.bool.isRequired,
+	}
+	constructor(props) {
+		super(props);
+		this.state={};
+	}
+	render() {
+
+	}
+}
+
 @DropTarget("bucket", bucketTarget, connect => ({ connectDropTarget: connect.dropTarget() }))
+@DropTarget(NativeTypes.FILE, uploadTarget, (connect, monitor)=>({ connectUploadTarget: connect.dropTarget(), isUploadOver: monitor.isOver() }))
 @DragSource("bucket", bucketSource, (connect, monitor) => ({ connectDragPreview: connect.dragPreview(), connectDragSource: connect.dragSource(), isDragging: monitor.isDragging() }))
 export class Bucket extends React.Component {
 	static propTypes = {
@@ -80,8 +136,8 @@ export class Bucket extends React.Component {
 		ID: PropTypes.string.isRequired,
 		index: PropTypes.number.isRequired,
 	}
-	constructor() {
-		super();
+	constructor(props) {
+		super(props);
 		this.state = {};
 	}
 
@@ -100,7 +156,7 @@ export class Bucket extends React.Component {
 	}
 
 	render() {
-		const { isDragging, connectDragSource, connectDropTarget, connectDragPreview } = this.props;
+		const { isDragging, isUploadOver, connectDragSource, connectDropTarget, connectDragPreview, connectUploadTarget } = this.props;
 		const opacity = isDragging ? 0 : 1;
 		var icon;
 		if (this.state.Missing) {
@@ -112,12 +168,15 @@ export class Bucket extends React.Component {
 
 		var deleteZone;
 		if (isDragging) {
-			deleteZone = <DeleteBucket />;
+			deleteZone = <DeleteZone />;
 		}
-
+		var style = {opacity};
+		if (isUploadOver) {
+			style.background = "lightblue";
+		}
 		var ID = this.state.ID;
 
-		return connectDragPreview(connectDropTarget(<div><Card style={{ opacity }} className="bucket" initiallyExpanded={false}>
+		return connectUploadTarget(connectDragPreview(connectDropTarget(<div><Card style={style} className="bucket" initiallyExpanded={false}>
 			<CardHeader
 				className="bucket-header"
 				title={this.state.Name}
@@ -129,7 +188,7 @@ export class Bucket extends React.Component {
 				<TextField floatingLabelText="Name" onChange={e=>{ BucketActions.setName(ID, e.target.value) }} value={this.state.Name} />
 				<TextField floatingLabelText="Caption" onChange={e=>{ BucketActions.setCaption(ID, e.target.value) }} value={this.state.Caption} multiLine={true} />
 			</CardActions>
-		</Card><div>{deleteZone}</div></div>), {dropEffect: 'move'})
+		</Card><div>{deleteZone}</div></div>), {dropEffect: 'move'}))
 	}
 }
 

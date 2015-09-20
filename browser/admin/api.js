@@ -54,6 +54,42 @@ function PromiseThrottleArg(fn) {
 	}
 }
 
+function UploadImage(bucketID, file, progressCallback) {
+	// progressCallback should be called immediately with UUID
+	// and again when finished
+
+	const name = file.name;
+	const size = file.size;
+
+	const info = {name: file.name, size: file.size||1, pos: 0, finished: false, failed: false};
+	progressCallback(info);
+
+	var xhr = new XMLHttpRequest();
+	xhr.upload.addEventListener("progress", function(e){
+		if (e.lengthComputable) {
+			info.size = e.total;
+			info.pos = e.loaded;
+			progressCallback(info);
+		}
+	});
+	xhr.upload.addEventListener("load", function(e){
+		info.finished = true;
+		info.pos = info.size;
+		progressCallback(info);
+	});
+	xhr.open("POST", "admin/images?BucketID=" + encodeURIComponent(bucketID), true);
+	xhr.overrideMimeType(file.type);
+	var done = new Bluebird(function(resolve, reject){
+		xhr.addEventListener("load", function(e){
+			resolve(e.target.responseText);
+		});
+		xhr.onerror = reject;
+	});
+
+	xhr.send(file);
+	return done;
+}
+
 export default {
 	GetMeta: PromiseThrottle(()=>{ return xr.get("admin/meta") }),
 	UpdateMeta: PromiseThrottleProp("ID", meta=>{ return xr.put("admin/meta", meta) }),
@@ -66,4 +102,6 @@ export default {
 	GetImage: PromiseThrottleArg(id=>{ return xr.get("admin/images/" + id) }),
 	UpdateImage: PromiseThrottleProp("ID", image=>{ return xr.put("admin/images/" + image.ID, image) }),
 	DeleteImage: PromiseThrottleArg(id=>{ return xr.del("admin/images/" + id) }),
+
+	UploadImage: UploadImage,
 }

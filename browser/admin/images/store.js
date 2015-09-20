@@ -31,6 +31,9 @@ var ImageStore = Reflux.createStore({
 	onUpdateImage: function(image) {
 		this._setImage(image);
 	},
+	onAddImageCompleted: function(bucketID, image) {
+		this._setImage(image);
+	},
 	onSetEnabled: function(id, val) {
 		var img = this.get(id);
 		img.Enabled = val;

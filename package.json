@@ -22,6 +22,7 @@
     "react-tap-event-plugin": "^0.1.7",
     "reflux": "^0.2.12",
     "style-loader": "^0.12.4",
+    "uuid-js": "^0.7.5",
     "xr": "^0.1.13"
   },
   "devDependencies": {

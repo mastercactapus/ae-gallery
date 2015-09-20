@@ -4,9 +4,14 @@ import (
 	"encoding/json"
 	"github.com/satori/go.uuid"
 	"golang.org/x/net/context"
+	"golang.org/x/oauth2/google"
 	"google.golang.org/appengine"
 	"google.golang.org/appengine/datastore"
+	"google.golang.org/appengine/file"
 	"google.golang.org/appengine/log"
+	"google.golang.org/cloud"
+	"google.golang.org/cloud/storage"
+	"io"
 	"net/http"
 )
 
@@ -229,14 +234,46 @@ func handleBucketsItem(w http.ResponseWriter, r *http.Request) {
 
 func handleImages(w http.ResponseWriter, r *http.Request) {
 	c := appengine.NewContext(r)
+
 	switch r.Method {
 	case "POST":
-		id := r.URL.Query().Get("BucketID")
-		if id == "" {
+		bucketID := r.URL.Query().Get("BucketID")
+		if bucketID == "" {
 			http.Error(w, "BucketID query parameter is required", http.StatusBadRequest)
 			return
 		}
+		bucket, err := file.DefaultBucketName(c)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
 
+		id := uuid.NewV4().String()
+
+		cli, err := google.DefaultClient(c, storage.ScopeReadWrite)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			log.Errorf(c, "failed upload: get default client: %s", err.Error())
+			return
+		}
+
+		gctx := cloud.WithContext(c, appengine.AppID(c), cli)
+		sw := storage.NewWriter(gctx, bucket, id)
+		io.Copy(sw, r.Body)
+		err = sw.Close()
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			log.Errorf(c, "failed upload: %s", err.Error())
+			return
+		}
+		var img Image
+		img.ID = id
+		img.URL = sw.Object().MediaLink
+		w.Header().Set("Content-Type", "application/json")
+		err = json.NewEncoder(w).Encode(&img)
+		if err != nil {
+			log.Errorf(c, "json encode: %s", err.Error())
+		}
 	case "GET":
 		var imgs []Image
 		_, err := datastore.NewQuery("Image").GetAll(c, &imgs)

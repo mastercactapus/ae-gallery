@@ -15,6 +15,7 @@ import {Tabs, Tab} from "material-ui";
 
 import SiteEditor from "./site-editor.jsx";
 import BucketEditor from "./bucket-editor.jsx";
+import UploadManager from "./upload-manager.jsx";
 
 import API from "./api.js";
 window.API = API;
@@ -47,10 +48,12 @@ var Main = React.createClass({
 		});
 	},
 	render() {
-		return <Tabs value={this.state.tab} onChange={this.tabChange}>
+		return <div><Tabs value={this.state.tab} onChange={this.tabChange}>
 			<Tab label="Site" value="site"><SiteEditor /></Tab>
 			<Tab label="Buckets" value="buckets"><BucketEditor /></Tab>
 		</Tabs>
+		<UploadManager />
+		</div>
 	}
 });
 
