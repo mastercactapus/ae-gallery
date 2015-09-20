@@ -1,5 +1,5 @@
 import Reflux from "reflux";
-import * as API from "../api.js";
+import API from "../api.js";
 import _ from "lodash";
 
 var ImagesActions = Reflux.createActions({

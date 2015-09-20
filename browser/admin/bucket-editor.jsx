@@ -1,16 +1,56 @@
-import React from "react";
+import React, { PropTypes } from "react";
 import Reflux from "reflux";
 import _ from "lodash";
-import {Card, CardHeader, TextField, FlatButton, Avatar, CardActions, FontIcon, Toggle} from "material-ui";
+import {
+	Card,
+	CardHeader, 
+	TextField, 
+	FlatButton, 
+	Avatar, 
+	CardActions, 
+	FontIcon, 
+	Toggle,
+	CircularProgress,
+} from "material-ui";
 
 import MetaStore from "./meta/store.js";
 import MetaActions from "./meta/actions.js";
 import BucketStore from "./buckets/store.js";
 import BucketActions from "./buckets/actions.js";
 
-import { DragSource, DropTarget } from "react-dnd"
+import { DragSource, DropTarget, DragDropContext } from "react-dnd"
+import HTML5Backend from "react-dnd/modules/backends/HTML5";
 
+const bucketSource = {
+	beginDrag(props) {
+		return {
+			ID: props.ID,
+			index: props.index,
+		};
+	}
+};
+const bucketTarget = {
+	hover(props, monitor, component) {
+		const ownId = props.ID;
+		const draggedId = monitor.getItem().ID;
+		if (draggedId == ownId) {
+			return;
+		}
+
+	  	MetaActions.reorderBucket(draggedId, ownId);
+	}
+};
+
+@DropTarget("bucket", bucketTarget, connect => ({ connectDropTarget: connect.dropTarget() }))
+@DragSource("bucket", bucketSource, (connect, monitor) => ({ connectDragPreview: connect.dragPreview(), connectDragSource: connect.dragSource(), isDragging: monitor.isDragging() }))
 export class Bucket extends React.Component {
+	static propTypes = {
+		connectDragSource: PropTypes.func.isRequired,
+		connectDropTarget: PropTypes.func.isRequired,
+		isDragging: PropTypes.bool.isRequired,
+		ID: PropTypes.string.isRequired,
+		index: PropTypes.number.isRequired,
+	}
 	constructor() {
 		super();
 		this.state = {};
@@ -21,6 +61,7 @@ export class Bucket extends React.Component {
 		this.unsubscribeBucket = BucketStore.listen(buckets => {
 			var b = buckets[this.props.ID];
 			if (!b) return;
+			b.Missing = false;
 			this.setState(b);
 		});
 	}
@@ -30,19 +71,35 @@ export class Bucket extends React.Component {
 	}
 
 	render() {
-		var icon = <FontIcon className="material-icons">reorder</FontIcon>;
+		const { isDragging, connectDragSource, connectDropTarget, connectDragPreview } = this.props;
+		const opacity = isDragging ? 0 : 1;
+		var icon;
+		if (this.state.Missing) {
+			icon = <CircularProgress mode="indeterminate" size={0.3} />
+		} else {
+			icon = connectDragSource(<FontIcon className="bucket-drag material-icons">reorder</FontIcon>);
+		}
 
-		return <Card initiallyExpanded={false}>
+		var ID = this.state.ID;
+
+		return connectDragPreview(connectDropTarget( <Card style={{ opacity }} className="bucket" initiallyExpanded={false}>
 			<CardHeader
 				className="bucket-header"
 				title={this.state.Name}
 				subtitle={this.state.Caption}
 				showExpandableButton={true}
 				avatar={icon} />
-		</Card>
+			<CardActions style={{width:200,display: 'inline-block'}} expandable={true}>
+				<Toggle label="Enabled" defaultToggled={this.state.Enabled} onToggle={(e,t)=>{ BucketActions.setEnabled(ID, t) }} />
+				<TextField floatingLabelText="Name" onChange={e=>{ BucketActions.setName(ID, e.target.value) }} value={this.state.Name} />
+				<TextField floatingLabelText="Caption" onChange={e=>{ BucketActions.setCaption(ID, e.target.value) }} value={this.state.Caption} multiLine={true} />
+			</CardActions>
+
+		</Card>), {dropEffect: 'move'})
 	}
 }
 
+@DragDropContext(HTML5Backend)
 export default class BucketEditor extends React.Component {
 	constructor() {
 		super();
@@ -51,11 +108,6 @@ export default class BucketEditor extends React.Component {
 			Buckets: [],
 			newName: "",
 		};
-	}
-
-	componentWillMount() {
-		MetaActions.loadMeta();
-		BucketActions.loadBuckets();
 	}
 
 	componentDidMount() {
@@ -81,14 +133,14 @@ export default class BucketEditor extends React.Component {
 	}
 
 	render() {
-		var buckets = _.map(this.state.Buckets, id=>{
-			return <Bucket key={id} ID={id} />
+		var buckets = _.map(this.state.Buckets, (id,index)=>{
+			return <Bucket key={id} index={index} ID={id} />
 		});
 
 		return <div>
 			<div>
-				<TextField floatingLabelText="Bucket name" value={this.state.newName} onChange={this.newNameChange} />
-				<FlatButton label="Create New" primary={true} disabled={this.state.newName.length === 0} onClick={this.createBucket} />
+				<TextField floatingLabelText="Bucket name" value={this.state.newName} onChange={this.newNameChange.bind(this)} />
+				<FlatButton label="Create New" primary={true} disabled={this.state.newName.length === 0} onClick={this.createBucket.bind(this)} />
 			</div>
 			{buckets}
 		</div>

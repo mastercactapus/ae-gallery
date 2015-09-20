@@ -20,7 +20,10 @@ var MetaStore = Reflux.createStore({
 	onUpdateMetaFailed: function(result) {
 		MetaActions.loadMeta();
 	},
-	onReorderBucket: function(oldIndex, newIndex) {
+	onReorderBucket: function(oldID, newID) {
+		var oldIndex = this.state.Buckets.indexOf(oldID);
+		var newIndex = this.state.Buckets.indexOf(newID);
+
 		this.state.Buckets.splice(newIndex, 0, this.state.Buckets.splice(oldIndex, 1)[0]);
 		MetaActions.updateMeta(this.state);
 		this.trigger(this.state);
@@ -46,5 +49,7 @@ var MetaStore = Reflux.createStore({
 		return this.state;
 	},
 });
+
+MetaActions.loadMeta();
 
 module.exports = MetaStore;

@@ -54,4 +54,7 @@ var ImageStore = Reflux.createStore({
 		return this.state[id] || {ID: "", Name: "", Caption: "", Enabled: false, Height: 0, Width: 0, URL: ""};
 	}
 });
+
+ImageActions.loadImages();
+
 module.exports = ImageStore;

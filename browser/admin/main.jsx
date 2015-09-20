@@ -16,6 +16,9 @@ import {Tabs, Tab} from "material-ui";
 import SiteEditor from "./site-editor.jsx";
 import BucketEditor from "./bucket-editor.jsx";
 
+import API from "./api.js";
+window.API = API;
+
 var Main = React.createClass({
 	childContextTypes: {
 		muiTheme: React.PropTypes.object,

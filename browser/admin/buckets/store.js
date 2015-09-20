@@ -35,19 +35,19 @@ var BucketStore = Reflux.createStore({
 	onSetEnabled: function(id, val) {
 		var bucket = this.get(id);
 		bucket.Enabled = val;
-		this.updateBucket(bucket);
+		BucketActions.updateBucket(bucket);
 		this.trigger(this.state);
 	},
 	onSetName: function(id, val) {
 		var bucket = this.get(id);
 		bucket.Name = val;
-		this.updateBucket(bucket);
+		BucketActions.updateBucket(bucket);
 		this.trigger(this.state);
 	},
 	onSetCaption: function(id, val) {
 		var bucket = this.get(id);
 		bucket.Caption = val;
-		this.updateBucket(bucket);
+		BucketActions.updateBucket(bucket);
 		this.trigger(this.state);
 	},
 	onRemoveImage: function(id) {
@@ -76,9 +76,11 @@ var BucketStore = Reflux.createStore({
 		if (!s) {
 			BucketActions.loadBucket(id);
 		}
-		return s || {ID: "", Name: "", Caption: "", Enabled: false, Images: []};
+		return s || {ID: "", Name: "", Caption: "", Enabled: false, Images: [], Missing: true};
 	},
 
 });
+
+BucketActions.loadBuckets();
 
 module.exports = BucketStore;
