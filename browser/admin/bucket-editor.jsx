@@ -40,6 +40,36 @@ const bucketTarget = {
 	  	MetaActions.reorderBucket(draggedId, ownId);
 	}
 };
+const deleteBucketTarget = {
+	drop(props, monitor, component) {
+		BucketActions.removeBucket(monitor.getItem().ID);
+	}
+};
+
+@DropTarget("bucket", deleteBucketTarget, (connect, monitor)=>({ connectDropTarget: connect.dropTarget(), isOver: monitor.isOver() }))
+export class DeleteBucket extends React.Component {
+	render() {
+		const { connectDropTarget, isOver } = this.props;
+
+		var style = {
+			position: "fixed",
+			width: "100%",
+			top: 0,
+			left: 0,
+			right: 0,
+			opacity: 0.35,
+			background: 'red',
+			textAlign: "center",
+			fontSize: 18,
+			height: "5em",
+			zIndex: 9999,
+		};
+		if (isOver) {
+			style.opacity = 1;
+		}
+		return connectDropTarget(<div style={style}>Delete Bucket</div>);
+	}
+}
 
 @DropTarget("bucket", bucketTarget, connect => ({ connectDropTarget: connect.dropTarget() }))
 @DragSource("bucket", bucketSource, (connect, monitor) => ({ connectDragPreview: connect.dragPreview(), connectDragSource: connect.dragSource(), isDragging: monitor.isDragging() }))
@@ -77,12 +107,18 @@ export class Bucket extends React.Component {
 		if (this.state.Missing) {
 			icon = <CircularProgress mode="indeterminate" size={0.3} />
 		} else {
-			icon = connectDragSource(<FontIcon className="bucket-drag material-icons">reorder</FontIcon>);
+			icon = <FontIcon className="bucket-drag material-icons">reorder</FontIcon>;
+		}
+		icon = connectDragSource(icon);
+
+		var deleteZone;
+		if (isDragging) {
+			deleteZone = <DeleteBucket />;
 		}
 
 		var ID = this.state.ID;
 
-		return connectDragPreview(connectDropTarget( <Card style={{ opacity }} className="bucket" initiallyExpanded={false}>
+		return connectDragPreview(connectDropTarget(<div><Card style={{ opacity }} className="bucket" initiallyExpanded={false}>
 			<CardHeader
 				className="bucket-header"
 				title={this.state.Name}
@@ -94,8 +130,7 @@ export class Bucket extends React.Component {
 				<TextField floatingLabelText="Name" onChange={e=>{ BucketActions.setName(ID, e.target.value) }} value={this.state.Name} />
 				<TextField floatingLabelText="Caption" onChange={e=>{ BucketActions.setCaption(ID, e.target.value) }} value={this.state.Caption} multiLine={true} />
 			</CardActions>
-
-		</Card>), {dropEffect: 'move'})
+		</Card><div>{deleteZone}</div></div>), {dropEffect: 'move'})
 	}
 }
 
