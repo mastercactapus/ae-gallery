@@ -61,9 +61,9 @@ export default {
 	GetBuckets: PromiseThrottle(()=>{ return xr.get("admin/buckets") }),
 	GetBucket: PromiseThrottleArg(id=>{ return xr.get("admin/buckets/" + id) }),
 	UpdateBucket: PromiseThrottleProp("ID", bucket=>{ return xr.put("admin/buckets/" + bucket.ID, bucket) }),
-	DeleteBucket: PromiseThrottleArg(id=>{ return xr.delete("admin/buckets/" + id) }),
+	DeleteBucket: PromiseThrottleArg(id=>{ return xr.del("admin/buckets/" + id) }),
 	GetImages: PromiseThrottle(()=>{ return xr.get("admin/images") }),
 	GetImage: PromiseThrottleArg(id=>{ return xr.get("admin/images/" + id) }),
 	UpdateImage: PromiseThrottleProp("ID", image=>{ return xr.put("admin/images/" + image.ID, image) }),
-	DeleteImage: PromiseThrottleArg(id=>{ return xr.delete("admin/images/" + id) }),
+	DeleteImage: PromiseThrottleArg(id=>{ return xr.del("admin/images/" + id) }),
 }
