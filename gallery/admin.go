@@ -193,7 +193,28 @@ func handleBucketsItem(w http.ResponseWriter, r *http.Request) {
 		}
 		w.WriteHeader(204)
 	case "DELETE":
-		err := datastore.Delete(c, key)
+		err := datastore.RunInTransaction(c, func(c context.Context) error {
+			err := datastore.Delete(c, key)
+			if err != nil {
+				return err
+			}
+			metaKey := datastore.NewKey(c, "Meta", "main", 0, nil)
+			var m Meta
+			err = datastore.Get(c, metaKey, &m)
+			if err != nil {
+				return err
+			}
+			b := m.Buckets[:0]
+			for _, bucket := range m.Buckets {
+				if bucket == id {
+					continue
+				}
+				b = append(b, bucket)
+			}
+			m.Buckets = b
+			_, err = datastore.Put(c, metaKey, &m)
+			return err
+		}, &datastore.TransactionOptions{XG: true})
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			log.Errorf(c, "delete bucket: %s", err.Error())
