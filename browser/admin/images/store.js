@@ -14,7 +14,7 @@ var ImageStore = Reflux.createStore({
 			return;
 		}
 		this.state[image.ID] = image;
-		this.trigger(image.ID, image);
+		this.trigger(this.state);
 	},
 	onLoadImagesCompleted: function(images) {
 		_.each(images, this._setImage);
@@ -31,8 +31,8 @@ var ImageStore = Reflux.createStore({
 	onUpdateImage: function(image) {
 		this._setImage(image);
 	},
-	onAddImageCompleted: function(bucketID, image) {
-		this._setImage(image);
+	onAddImageCompleted: function(bucketID, images) {
+		_.each(images, this._setImage);
 	},
 	onSetEnabled: function(id, val) {
 		var img = this.get(id);

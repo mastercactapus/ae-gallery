@@ -120,8 +120,22 @@ export class Image extends React.Component {
 		super(props);
 		this.state={};
 	}
-	render() {
+	componentDidMount() {
+		this.setState(ImageStore.get(this.props.ID));
+		this.unsubscribeImage = ImageStore.listen(images => {
+			var b = images[this.props.ID];
+			if (!b) return;
+			this.setState(b);
+		});
+	}
 
+	componentWillUnmount() {
+		this.unsubscribeImage();
+	}
+	render() {
+		var thumbURL = this.state.URL+"=s200";
+		var style = {width:200,height:200,display: "inline-block"};
+		return <div style={style}><img src={thumbURL} /></div>
 	}
 }
 
@@ -174,8 +188,9 @@ export class Bucket extends React.Component {
 		if (isUploadOver) {
 			style.background = "lightblue";
 		}
-		var ID = this.state.ID;
+		var ID = this.props.ID;
 
+		var images = _.map(this.state.Images, (img,idx)=>{ return <Image key={img} ID={img} bucketID={ID} /> });
 		return connectUploadTarget(connectDragPreview(connectDropTarget(<div><Card style={style} className="bucket" initiallyExpanded={false}>
 			<CardHeader
 				className="bucket-header"
@@ -187,6 +202,9 @@ export class Bucket extends React.Component {
 				<Toggle label="Enabled" defaultToggled={this.state.Enabled} onToggle={(e,t)=>{ BucketActions.setEnabled(ID, t) }} />
 				<TextField floatingLabelText="Name" onChange={e=>{ BucketActions.setName(ID, e.target.value) }} value={this.state.Name} />
 				<TextField floatingLabelText="Caption" onChange={e=>{ BucketActions.setCaption(ID, e.target.value) }} value={this.state.Caption} multiLine={true} />
+			</CardActions>
+			<CardActions style={{display: 'inline-block', padding: 20, minHeight: 240, width: 900}} expandable={true}>
+				{images}
 			</CardActions>
 		</Card><div>{deleteZone}</div></div>), {dropEffect: 'move'}))
 	}

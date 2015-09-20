@@ -32,13 +32,13 @@ var BucketStore = Reflux.createStore({
 		this.state[id] = null;
 		this.trigger(this.state);
 	},
-	onAddImageCompleted: function(bucketID, image) {
+	onAddImageCompleted: function(bucketID, images) {
 		var bucket = this.get(bucketID);
 		if (!bucket.Images) {
 			bucket.Images = [];
 		}
-		bucket.Images.push(image.ID);
-		this._setBucket(bucket);
+		_.each(images, img=>{bucket.Images.push(img.ID)});
+		this.trigger(this.state);
 	},
 	onSetEnabled: function(id, val) {
 		var bucket = this.get(id);
