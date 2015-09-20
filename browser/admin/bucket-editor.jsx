@@ -53,21 +53,20 @@ export class DeleteBucket extends React.Component {
 
 		var style = {
 			position: "fixed",
-			width: "100%",
 			top: 0,
 			left: 0,
 			right: 0,
-			opacity: 0.35,
-			background: 'red',
-			textAlign: "center",
-			fontSize: 18,
-			height: "5em",
+			fontSize: 64,
+			background: "white",
 			zIndex: 9999,
 		};
 		if (isOver) {
-			style.opacity = 1;
+			style.color = "red";
 		}
-		return connectDropTarget(<div style={style}>Delete Bucket</div>);
+
+		var iconStyle = { color: style.color, fontSize: style.fontSize }
+
+		return connectDropTarget(<center style={style}><FontIcon style={iconStyle} className="material-icons">delete</FontIcon> Delete</center>);
 	}
 }
 
