@@ -4,14 +4,15 @@ import (
 	"encoding/json"
 	"github.com/satori/go.uuid"
 	"golang.org/x/net/context"
-	"golang.org/x/oauth2/google"
 	"google.golang.org/appengine"
+	"google.golang.org/appengine/blobstore"
 	"google.golang.org/appengine/datastore"
-	"google.golang.org/appengine/file"
+	aimage "google.golang.org/appengine/image"
 	"google.golang.org/appengine/log"
-	"google.golang.org/cloud"
-	"google.golang.org/cloud/storage"
-	"io"
+	"image"
+	_ "image/gif"
+	_ "image/jpeg"
+	_ "image/png"
 	"net/http"
 )
 
@@ -237,40 +238,90 @@ func handleImages(w http.ResponseWriter, r *http.Request) {
 
 	switch r.Method {
 	case "POST":
-		bucketID := r.URL.Query().Get("BucketID")
+		blobs, vals, err := blobstore.ParseUpload(r)
+		if err != nil {
+			http.Error(w, "bad request", http.StatusBadRequest)
+			log.Errorf(c, "bad request: %s", err.Error())
+			return
+		}
+		bucketID := vals.Get("BucketID")
 		if bucketID == "" {
 			http.Error(w, "BucketID query parameter is required", http.StatusBadRequest)
 			return
 		}
-		bucket, err := file.DefaultBucketName(c)
+		url, err := blobstore.UploadURL(c, "/admin/images", nil)
+		if err == nil {
+			w.Header().Set("UploadURL", url.String())
+		}
+		imgs := make([]Image, 0, 20)
+		for _, infos := range blobs {
+			for _, info := range infos {
+				var img Image
+				img.Name = info.Filename
+				imgUrl, err := aimage.ServingURL(c, info.BlobKey, nil)
+				if err != nil {
+					log.Errorf(c, "failed to get serving url for blob '%s': %s", info.BlobKey, err.Error())
+					http.Error(w, err.Error(), http.StatusInternalServerError)
+					return
+				}
+				img.URL = imgUrl.String()
+				img.ID = string(info.BlobKey)
+				ir := blobstore.NewReader(c, info.BlobKey)
+				cfg, _, err := image.DecodeConfig(ir)
+				if err != nil {
+					log.Warningf(c, "decode image '%s': %s", info.BlobKey, err.Error())
+					err = blobstore.Delete(c, info.BlobKey)
+					if err != nil {
+						log.Errorf(c, "delete blob '%s': %s", info.BlobKey, err.Error())
+					}
+					continue
+				}
+				img.Height = cfg.Height
+				img.Width = cfg.Width
+				imgs = append(imgs, img)
+			}
+		}
+
+		// add images to bucket and dtore
+		err = datastore.RunInTransaction(c, func(c context.Context) error {
+			bucketKey := datastore.NewKey(c, "Bucket", bucketID, 0, nil)
+			var b Bucket
+			err := datastore.Get(c, bucketKey, &b)
+			if err != nil {
+				return err
+			}
+			if b.Images == nil {
+				b.Images = make([]string, 0, len(imgs))
+			}
+			for _, img := range imgs {
+				_, err = datastore.Put(c, datastore.NewKey(c, "Image", img.ID, 0, nil), &img)
+				if err != nil {
+					return err
+				}
+				b.Images = append(b.Images, img.ID)
+			}
+			_, err = datastore.Put(c, bucketKey, &b)
+			return err
+		}, &datastore.TransactionOptions{XG: true})
+
+		if err == datastore.ErrNoSuchEntity {
+			for _, img := range imgs {
+				err = blobstore.Delete(c, appengine.BlobKey(img.ID))
+				if err != nil {
+					log.Warningf(c, "delete blob '%s': %s", img.ID, err.Error())
+				}
+			}
+			http.NotFound(w, r)
+			return
+		}
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
+			log.Errorf(c, "update datastore: %s", err.Error())
 			return
 		}
 
-		id := uuid.NewV4().String()
-
-		cli, err := google.DefaultClient(c, storage.ScopeReadWrite)
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			log.Errorf(c, "failed upload: get default client: %s", err.Error())
-			return
-		}
-
-		gctx := cloud.WithContext(c, appengine.AppID(c), cli)
-		sw := storage.NewWriter(gctx, bucket, id)
-		io.Copy(sw, r.Body)
-		err = sw.Close()
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			log.Errorf(c, "failed upload: %s", err.Error())
-			return
-		}
-		var img Image
-		img.ID = id
-		img.URL = sw.Object().MediaLink
 		w.Header().Set("Content-Type", "application/json")
-		err = json.NewEncoder(w).Encode(&img)
+		err = json.NewEncoder(w).Encode(&imgs)
 		if err != nil {
 			log.Errorf(c, "json encode: %s", err.Error())
 		}

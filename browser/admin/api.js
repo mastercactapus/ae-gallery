@@ -2,6 +2,9 @@ import xr from "xr";
 import _ from "lodash";
 import Bluebird from "bluebird";
 
+
+var currentUploadURL = UploadURL;
+
 function PromiseThrottle(fn) {
 	var fnPending = Bluebird.resolve();
 	var timePending = Bluebird.resolve();
@@ -77,16 +80,23 @@ function UploadImage(bucketID, file, progressCallback) {
 		info.pos = info.size;
 		progressCallback(info);
 	});
-	xhr.open("POST", "admin/images?BucketID=" + encodeURIComponent(bucketID), true);
+	xhr.open("POST", currentUploadURL + "?BucketID=" + encodeURIComponent(bucketID), true);
 	xhr.overrideMimeType(file.type);
 	var done = new Bluebird(function(resolve, reject){
 		xhr.addEventListener("load", function(e){
-			resolve(e.target.responseText);
+			var newURL = e.target.getResponseHeader("UploadURL");
+			if (newURL) {
+				currentUploadURL = newURL;
+			}
+			resolve(JSON.parse(e.target.responseText));
 		});
 		xhr.onerror = reject;
 	});
 
-	xhr.send(file);
+	var fd = new FormData();
+	fd.append("file", file);
+
+	xhr.send(fd);
 	return done;
 }
 

@@ -2,6 +2,7 @@ package gallery
 
 import (
 	"google.golang.org/appengine"
+	"google.golang.org/appengine/blobstore"
 	"google.golang.org/appengine/log"
 	"html/template"
 	"net/http"
@@ -20,8 +21,15 @@ func init() {
 }
 
 func handleAdminPage(w http.ResponseWriter, r *http.Request) {
-	err := t.ExecuteTemplate(w, "admin.html", nil)
+	c := appengine.NewContext(r)
+	url, err := blobstore.UploadURL(c, "/admin/images", nil)
 	if err != nil {
-		log.Errorf(appengine.NewContext(r), "render failed: %s", err.Error())
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		log.Errorf(c, "failed to get upload url: %s", err.Error())
+		return
+	}
+	err = t.ExecuteTemplate(w, "admin.html", struct{ UploadURL string }{url.String()})
+	if err != nil {
+		log.Errorf(c, "render failed: %s", err.Error())
 	}
 }
