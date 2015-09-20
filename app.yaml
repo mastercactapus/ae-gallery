@@ -4,9 +4,14 @@ runtime: go
 api_version: go1
 
 handlers:
-- url: /admin/.*
+- url: /admin
+  login: admin
+  script: _go_app
+
+- url: /admin/.+
   script: _go_app
   login: admin
+  auth_fail_action: unauthorized
 
 - url: /public
   static_dir: public
@@ -15,4 +20,4 @@ handlers:
   script: _go_app
 
 skip_files:
-- node_modules/
+- ^(.*/)?node_modules/.*
