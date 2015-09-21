@@ -1,6 +1,7 @@
 package gallery
 
 import (
+	"github.com/russross/blackfriday"
 	"google.golang.org/appengine"
 	"google.golang.org/appengine/blobstore"
 	"google.golang.org/appengine/datastore"
@@ -9,9 +10,14 @@ import (
 	"net/http"
 )
 
-var t = template.Must(template.ParseGlob("templates/*.html"))
+var t = template.Must(template.New("main").Funcs(template.FuncMap{"markdown": markdown}).ParseGlob("templates/*.html"))
+
+func markdown(data string) template.HTML {
+	return template.HTML(blackfriday.MarkdownCommon([]byte(data)))
+}
 
 func init() {
+
 	http.HandleFunc("/admin/buckets", handleBuckets)
 	http.HandleFunc("/admin/images", handleImages)
 	http.HandleFunc("/admin/files", handleFiles)

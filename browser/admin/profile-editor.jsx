@@ -79,11 +79,14 @@ class FileEditor extends React.Component {
 	}
 }
 
+var updateMeta = _.throttle(function(val){
+	MetaActions.editMeta({Profile: val});
+},3000);
+
 export default class ProfileEditor extends React.Component {
 	constructor(props) {
 		super(props);
 		this.state = {
-			loaded: false,
 			meta: MetaStore.get()
 		};
 	}
@@ -99,17 +102,9 @@ export default class ProfileEditor extends React.Component {
 		this.unsubscribeMeta();
 	}
 
-	updateProfile(val) {
-		if (!this.state.loaded) return;
-		MetaActions.editMeta({Profile: val})
-	}
-	editorLoad() {
-		this.setState({loaded: true});
-	}
-
 	render() {
 		return <div>
-			<AceEditor width={600} mode="markdown" value={this.state.meta.Profile} editorProps={{$blockScrolling: true}} theme="github" name="profileEdit" />
+			<AceEditor width={600} mode="markdown" value={this.state.meta.Profile} onChange={updateMeta} editorProps={{$blockScrolling: true}} theme="github" name="profileEdit" />
 			<FileEditor />
 			</div>
 	}
