@@ -51,7 +51,8 @@ class LogoEditor extends React.Component {
 
 		var logoImage = <span></span>;
 		if (this.props.URL) {
-			logoImage = <img src={this.props.URL} />;
+			var link = this.props.URL + "=s300";
+			logoImage = <img src={link} />;
 		}
 
 		return connectDropTarget(<Card style={style}>
