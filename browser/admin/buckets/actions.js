@@ -9,9 +9,10 @@ var BucketActions = Reflux.createActions({
 	"removeBucket": { children: ["completed", "failed"] },
 	"addBucket": { children: ["completed", "failed"] },
 	"reorderImage": {},
-	"setEnabled": {},
-	"setName": {},
-	"setCaption": {}
+	"moveImage": {},
+	"setBucketEnabled": {},
+	"setBucketName": {},
+	"setBucketCaption": {}
 });
 
 BucketActions.loadBuckets.listen(function(){

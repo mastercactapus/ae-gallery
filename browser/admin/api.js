@@ -57,14 +57,14 @@ function PromiseThrottleArg(fn) {
 	}
 }
 
-function UploadImage(bucketID, file, progressCallback) {
+function UploadImages(bucketID, files, progressCallback) {
 	// progressCallback should be called immediately with UUID
 	// and again when finished
 
-	const name = file.name;
-	const size = file.size;
+	const name = files.length > 1 ? files.length + " files" : files[0].name;
+	const size = _.reduce(files, (sum,file)=>{ return sum + file.size }, 0);
 
-	const info = {name: file.name, size: file.size||1, pos: 0, finished: false, failed: false};
+	const info = {name: name, size: size||1, pos: 0, finished: false, failed: false};
 	progressCallback(info);
 
 	var xhr = new XMLHttpRequest();
@@ -80,8 +80,7 @@ function UploadImage(bucketID, file, progressCallback) {
 		info.pos = info.size;
 		progressCallback(info);
 	});
-	xhr.open("POST", currentUploadURL + "?BucketID=" + encodeURIComponent(bucketID), true);
-	xhr.overrideMimeType(file.type);
+	xhr.open("POST", currentUploadURL, true);
 	var done = new Bluebird(function(resolve, reject){
 		xhr.addEventListener("load", function(e){
 			var newURL = e.target.getResponseHeader("UploadURL");
@@ -94,7 +93,10 @@ function UploadImage(bucketID, file, progressCallback) {
 	});
 
 	var fd = new FormData();
-	fd.append("file", file);
+	_.each(files, (file,idx)=>{
+		fd.append("file" + idx, file);
+	});
+	fd.append("BucketID", bucketID);
 
 	xhr.send(fd);
 	return done;
@@ -113,5 +115,5 @@ export default {
 	UpdateImage: PromiseThrottleProp("ID", image=>{ return xr.put("admin/images/" + image.ID, image) }),
 	DeleteImage: PromiseThrottleArg(id=>{ return xr.del("admin/images/" + id) }),
 
-	UploadImage: UploadImage,
+	UploadImages: UploadImages,
 }

@@ -10,6 +10,7 @@ import {
 	CardActions, 
 	FontIcon, 
 	Toggle,
+	Paper,
 	CircularProgress,
 	Snackbar,
 } from "material-ui";
@@ -39,7 +40,6 @@ const bucketTarget = {
 		if (draggedId == ownId) {
 			return;
 		}
-
 	  	MetaActions.reorderBucket(draggedId, ownId);
 	}
 };
@@ -48,7 +48,7 @@ const uploadTarget = {
 	drop(props, monitor) {
 		var images = _.filter(monitor.getItem().files, f=>{ return /^image/.test(f.type) });
 		if (images.length === 0) return;
-		_.each(images, img=>{ ImageActions.addImage(props.ID, img) });
+		ImageActions.addImages(props.ID, images);
 	}
 };
 
@@ -63,9 +63,19 @@ const imageSource = {
 };
 const imageTarget = {
 	hover(props, monitor, component) {
-
+		const item = monitor.getItem();
+		if (item.bucketID !== props.bucketID) return;
+		if (item.ID === props.ID) return;
+		BucketActions.reorderImage(props.bucketID, item.ID, props.ID);
 	}
 };
+const imageBucketTarget = {
+	drop(props, monitor) {
+		var item = monitor.getItem();
+		if (props.ID === item.bucketID) return;
+		BucketActions.moveImage(item.ID, item.bucketID, props.ID);
+	}
+}
 
 
 const deleteTarget = {
@@ -94,6 +104,7 @@ export class DeleteZone extends React.Component {
 			fontSize: 64,
 			background: "white",
 			zIndex: 9999,
+			textAlign: "center"
 		};
 		if (isOver) {
 			style.color = "red";
@@ -101,7 +112,7 @@ export class DeleteZone extends React.Component {
 
 		var iconStyle = { color: style.color, fontSize: style.fontSize }
 
-		return connectDropTarget(<center style={style}><FontIcon style={iconStyle} className="material-icons">delete</FontIcon> Delete</center>);
+		return connectDropTarget(<Paper style={style}><FontIcon style={iconStyle} className="material-icons">delete</FontIcon> Delete</Paper>);
 	}
 }
 
@@ -129,16 +140,47 @@ export class Image extends React.Component {
 		});
 	}
 
+	changeEnabled(e,t) {
+		ImageActions.setImageEnabled(this.state.ID, t);
+		e.stopPropagation();
+	}
+	changeName(e) {
+		ImageActions.setImageName(this.state.ID, e.target.value);
+		e.stopPropagation();
+	}
+	changeCaption(e) {
+		ImageActions.setImageCaption(this.state.ID, e.target.value);
+		e.stopPropagation();
+	}
+
 	componentWillUnmount() {
 		this.unsubscribeImage();
 	}
 	render() {
-		var thumbURL = this.state.URL+"=s200";
-		var style = {width:200,height:200,display: "inline-block"};
-		return <div style={style}><img src={thumbURL} /></div>
+		const { connectDragPreview, connectDragSource, connectDropTarget, isDragging } = this.props;
+		var ID = this.props.ID;
+		var thumbURL = this.state.URL+"=s128";
+		var style = {width:180,display: "inline-block"};
+		var cStyle = {width:"100%"};
+
+		style.opacity = isDragging ? 0.3 : 1;
+		var image = connectDragSource(<div style={{height:128,width:128}}><img src={thumbURL} /></div>);
+		var body = connectDropTarget(connectDragPreview(<Paper style={{...style, margin: 4, padding: 4}}>
+				{image}
+					<Toggle style={cStyle} label="Enabled" defaultToggled={this.state.Enabled} onToggle={this.changeEnabled.bind(this)} />
+					<TextField style={cStyle} floatingLabelText="Name" onChange={this.changeName.bind(this)} value={this.state.Name} />
+					<TextField style={cStyle} floatingLabelText="Caption" onChange={this.changeCaption.bind(this)} value={this.state.Caption} multiLine={true} />
+			</Paper>), {dropEffect: 'move'});
+		var deleteZone = "";
+		if (isDragging) {
+			deleteZone = <DeleteZone />;
+		}
+
+
+		return <span>{body}<span>{deleteZone}</span></span>
 	}
 }
-
+@DropTarget("image", imageBucketTarget, (connect, monitor) => ({ connectImageTarget: connect.dropTarget(), isImageOver: monitor.isOver(), imageItem: monitor.getItem() }))
 @DropTarget("bucket", bucketTarget, connect => ({ connectDropTarget: connect.dropTarget() }))
 @DropTarget(NativeTypes.FILE, uploadTarget, (connect, monitor)=>({ connectUploadTarget: connect.dropTarget(), isUploadOver: monitor.isOver() }))
 @DragSource("bucket", bucketSource, (connect, monitor) => ({ connectDragPreview: connect.dragPreview(), connectDragSource: connect.dragSource(), isDragging: monitor.isDragging() }))
@@ -170,8 +212,9 @@ export class Bucket extends React.Component {
 	}
 
 	render() {
-		const { isDragging, isUploadOver, connectDragSource, connectDropTarget, connectDragPreview, connectUploadTarget } = this.props;
-		const opacity = isDragging ? 0 : 1;
+		var ID = this.props.ID;
+		const { isDragging, isUploadOver, connectDragSource, connectDropTarget, connectDragPreview, connectUploadTarget, connectImageTarget, isImageOver, imageItem } = this.props;
+		const opacity = isDragging ? 0.3 : 1;
 		var icon;
 		if (this.state.Missing) {
 			icon = <CircularProgress mode="indeterminate" size={0.3} />
@@ -184,14 +227,14 @@ export class Bucket extends React.Component {
 		if (isDragging) {
 			deleteZone = <DeleteZone />;
 		}
+		var allowImage = isImageOver && (imageItem.bucketID != ID);
 		var style = {opacity};
-		if (isUploadOver) {
+		if (isUploadOver || allowImage) {
 			style.background = "lightblue";
 		}
-		var ID = this.props.ID;
 
-		var images = _.map(this.state.Images, (img,idx)=>{ return <Image key={img} ID={img} bucketID={ID} /> });
-		return connectUploadTarget(connectDragPreview(connectDropTarget(<div><Card style={style} className="bucket" initiallyExpanded={false}>
+		var images = _.map(this.state.Images, (img,idx)=>{ return <Image key={img} ID={img} index={idx} bucketID={ID} /> });
+		var body = connectImageTarget(connectUploadTarget(connectDragPreview(connectDropTarget(<Card style={style} className="bucket" initiallyExpanded={false}>
 			<CardHeader
 				className="bucket-header"
 				title={this.state.Name}
@@ -199,14 +242,16 @@ export class Bucket extends React.Component {
 				showExpandableButton={true}
 				avatar={icon} />
 			<CardActions style={{width:200,display: 'inline-block'}} expandable={true}>
-				<Toggle label="Enabled" defaultToggled={this.state.Enabled} onToggle={(e,t)=>{ BucketActions.setEnabled(ID, t) }} />
-				<TextField floatingLabelText="Name" onChange={e=>{ BucketActions.setName(ID, e.target.value) }} value={this.state.Name} />
-				<TextField floatingLabelText="Caption" onChange={e=>{ BucketActions.setCaption(ID, e.target.value) }} value={this.state.Caption} multiLine={true} />
+				<Toggle label="Enabled" defaultToggled={this.state.Enabled} onToggle={(e,t)=>{ BucketActions.setBucketEnabled(ID, t); e.stopPropagation() }} />
+				<TextField floatingLabelText="Name" onChange={e=>{ BucketActions.setBucketName(ID, e.target.value); e.stopPropagation() }} value={this.state.Name} />
+				<TextField floatingLabelText="Caption" onChange={e=>{ BucketActions.setBucketCaption(ID, e.target.value); e.stopPropagation() }} value={this.state.Caption} multiLine={true} />
 			</CardActions>
-			<CardActions style={{display: 'inline-block', padding: 20, minHeight: 240, width: 900}} expandable={true}>
-				{images}
+			<CardActions style={{display: 'inline-block', margin: 20, minHeight: 240}} expandable={true}>
+				<Paper>{images}</Paper>
 			</CardActions>
-		</Card><div>{deleteZone}</div></div>), {dropEffect: 'move'}))
+		</Card>), {dropEffect: 'move'})));
+
+		return <div>{body}<div>{deleteZone}</div></div>;
 	}
 }
 

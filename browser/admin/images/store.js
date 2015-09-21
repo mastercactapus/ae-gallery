@@ -17,40 +17,35 @@ var ImageStore = Reflux.createStore({
 		this.trigger(this.state);
 	},
 	onLoadImagesCompleted: function(images) {
-		_.each(images, this._setImage);
+		_.each(images, image=>{ this.state[image.ID] = image });
+		this.trigger(this.state);
 	},
 	onLoadImageCompleted: function(image) {
-		this._setImage(image);
+		this.state[image.ID] = image;
+		this.trigger(this.state);
 	},
 	onUpdateImageFailed: function(image) {
-		this.loadImage(image.ID);
+		ImageActions.loadImage(image.ID);
 	},
 	onRemoveImageFailed: function(id) {
-		this.loadImage(id);
+		ImageActions.loadImage(id);
 	},
 	onUpdateImage: function(image) {
-		this._setImage(image);
+		this.state[image.ID] = image;
+		this.trigger(this.state);
 	},
-	onAddImageCompleted: function(bucketID, images) {
-		_.each(images, this._setImage);
+	onAddImagesCompleted: function(bucketID, images) {
+		_.each(images, image=>{ this.state[image.ID] = image });
+		this.trigger(this.state);
 	},
-	onSetEnabled: function(id, val) {
-		var img = this.get(id);
-		img.Enabled = val;
-		this.updateImage(img);
-		this._setImage(img);
+	onSetImageEnabled: function(id, val) {
+		ImageActions.updateImage(_.defaults({Enabled: val}, this.get(id)));
 	},
-	onSetName: function(id, val) {
-		var img = this.get(id);
-		img.Name = val;
-		this.updateImage(img);
-		this._setImage(img);
+	onSetImageName: function(id, val) {
+		ImageActions.updateImage(_.defaults({Name: val}, this.get(id)));
 	},
-	onSetCaption: function(id, val) {
-		var img = this.get(id);
-		img.Caption = val;
-		this.updateImage(img);
-		this._setImage(img);
+	onSetImageCaption: function(id, val) {
+		ImageActions.updateImage(_.defaults({Caption: val}, this.get(id)));
 	},
 
 	get: function(id) {

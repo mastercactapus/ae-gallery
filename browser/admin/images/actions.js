@@ -8,10 +8,10 @@ var ImagesActions = Reflux.createActions({
 	"loadImage": { children: ["completed", "failed"] },
 	"updateImage": { children: ["completed", "failed"] },
 	"removeImage": { children: ["completed", "failed"] },
-	"addImage": { children: ["completed", "failed", "progressed"] },
-	"setEnabled": {},
-	"setName": {},
-	"setCaption": {}
+	"addImages": { children: ["completed", "failed", "progressed"] },
+	"setImageEnabled": {},
+	"setImageName": {},
+	"setImageCaption": {}
 });
 
 ImagesActions.loadImages.listen(function(){
@@ -26,9 +26,9 @@ ImagesActions.updateImage.listen(function(data){
 ImagesActions.removeImage.listen(function(id){
 	API.DeleteImage(id).then(this.completed, this.failed);
 });
-ImagesActions.addImage.listen(function(bucketID, file){
+ImagesActions.addImages.listen(function(bucketID, file){
 	var uploadID = UUID.create().toString();
-	API.UploadImage(bucketID, file, _.partial(this.progressed, uploadID)).then(_.partial(this.completed, bucketID), this.failed);
+	API.UploadImages(bucketID, file, _.partial(this.progressed, uploadID)).then(_.partial(this.completed, bucketID), this.failed);
 });
 
 module.exports = ImagesActions;

@@ -113,8 +113,11 @@ func handleBuckets(w http.ResponseWriter, r *http.Request) {
 			metaKey := datastore.NewKey(c, "Meta", "main", 0, nil)
 			var m Meta
 			err = datastore.Get(c, metaKey, &m)
-			if err != nil {
+			if err != nil && err != datastore.ErrNoSuchEntity {
 				return err
+			}
+			if m.Buckets == nil {
+				m.Buckets = []string{}
 			}
 			m.Buckets = append(m.Buckets, b.ID)
 			_, err = datastore.Put(c, metaKey, &m)
@@ -200,13 +203,9 @@ func handleBucketsItem(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(204)
 	case "DELETE":
 		err := datastore.RunInTransaction(c, func(c context.Context) error {
-			err := datastore.Delete(c, key)
-			if err != nil {
-				return err
-			}
 			metaKey := datastore.NewKey(c, "Meta", "main", 0, nil)
 			var m Meta
-			err = datastore.Get(c, metaKey, &m)
+			err := datastore.Get(c, metaKey, &m)
 			if err != nil {
 				return err
 			}
@@ -219,8 +218,30 @@ func handleBucketsItem(w http.ResponseWriter, r *http.Request) {
 			}
 			m.Buckets = b
 			_, err = datastore.Put(c, metaKey, &m)
+			if err != nil {
+				return err
+			}
 			return err
+
 		}, &datastore.TransactionOptions{XG: true})
+		if err != nil {
+			log.Warningf(c, "update meta: %s", err.Error())
+		}
+		var bk Bucket
+		err = datastore.Get(c, key, &bk)
+		if err == nil && bk.Images != nil { // delete images
+			for _, id := range bk.Images {
+				err = blobstore.Delete(c, appengine.BlobKey(id))
+				if err != nil {
+					log.Warningf(c, "delete image blob '%s': %s", id, err.Error())
+				}
+				err = datastore.Delete(c, datastore.NewKey(c, "Image", id, 0, nil))
+				if err != nil {
+					log.Warningf(c, "delete image entry '%s': %s", id, err.Error())
+				}
+			}
+		}
+		err = datastore.Delete(c, key)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			log.Errorf(c, "delete bucket: %s", err.Error())

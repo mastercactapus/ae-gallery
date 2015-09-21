@@ -12,13 +12,13 @@ var UploadStore = Reflux.createStore({
 		}
 	},
 
-	onAddImageProgressed: function(uploadID, info) {
+	onAddImagesProgressed: function(uploadID, info) {
 		if (info.finished) {
 			delete this.state.uploads[uploadID];
 		} else {
 			this.state.uploads[uploadID] = info;
 		}
-		this.trigger(this.state);
+		this.trigger(this.state.uploads);
 	},
 
 	get: function(id) {
