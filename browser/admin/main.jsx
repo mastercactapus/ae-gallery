@@ -35,7 +35,7 @@ var Main = React.createClass({
 	},
 	getInitialState() {
 		var h = window.location.hash.slice(1);
-		if (h !== "site" && h !== "buckets") {
+		if (h !== "site" && h !== "buckets" && h != "profile") {
 			h = "site";
 		}
 		return {

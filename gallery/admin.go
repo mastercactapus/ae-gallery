@@ -504,13 +504,19 @@ func handleFiles(w http.ResponseWriter, r *http.Request) {
 				file.Name = info.Filename
 				fileURL, err := aimage.ServingURL(c, info.BlobKey, nil)
 				if err != nil {
-					log.Errorf(c, "failed to get serving url for blob '%s': %s", info.BlobKey, err.Error())
+					log.Errorf(c, "get blob serving url '%s': %s", info.BlobKey, err.Error())
 					http.Error(w, err.Error(), http.StatusInternalServerError)
 					return
 				}
 				file.URL = fileURL.String()
 				file.ID = string(info.BlobKey)
 				file.Size = info.Size
+				_, err = datastore.Put(c, datastore.NewKey(c, "File", file.ID, 0, nil), &file)
+				if err != nil {
+					log.Errorf(c, "add file to datastore '%s': %s", info.BlobKey, err.Error())
+					http.Error(w, err.Error(), http.StatusInternalServerError)
+					return
+				}
 				files = append(files, file)
 			}
 		}

@@ -26,6 +26,9 @@ var FileStore = Reflux.createStore({
 		_.each(files, file=>{ this.state[file.ID] = file });
 		this.trigger(this.state);
 	},
+	getAll: function() {
+		return this.state;
+	},
 	get: function(id) {
 		return this.state[id] || {ID: "", Name: "", URL: "", Size: 0};
 	}
