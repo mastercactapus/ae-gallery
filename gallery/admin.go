@@ -17,16 +17,45 @@ import (
 )
 
 type Meta struct {
-	Title   string
-	Buckets []string
+	Title        string
+	Buckets      []string
+	Links        []Link
+	ContactEmail string
+	HeaderText   string
+	LogoURL      string
+	Profile      string
+	BucketsFull  []Bucket `datastore:"-"`
+}
+
+type Link struct {
+	Label string
+	URL   string
+}
+
+type File struct {
+	ID   string
+	Name string
+	URL  string
+	Size int64
 }
 
 type Bucket struct {
-	ID      string
-	Name    string
-	Caption string
-	Enabled bool
-	Images  []string
+	ID         string
+	Name       string
+	Caption    string
+	Enabled    bool
+	Images     []string
+	ImagesFull []Image `datastore:"-"`
+}
+
+type SafeBucket struct {
+	Name, Caption string
+	Images        []SafeImage
+}
+type SafeImage struct {
+	Name, Caption string
+	Height, Width int
+	URL           string
 }
 
 type Image struct {
@@ -39,11 +68,32 @@ type Image struct {
 	URL     string
 }
 
+func (m Meta) SafeBuckets() []SafeBucket {
+	s := make([]SafeBucket, len(m.BucketsFull))
+	for i, b := range m.BucketsFull {
+		s[i].Name = b.Name
+		s[i].Caption = b.Caption
+		s[i].Images = b.SafeImages()
+	}
+	return s
+}
+func (b Bucket) SafeImages() []SafeImage {
+	imgs := make([]SafeImage, len(b.ImagesFull))
+	for i, m := range b.ImagesFull {
+		imgs[i].Caption = m.Caption
+		imgs[i].Name = m.Name
+		imgs[i].Height = m.Height
+		imgs[i].Width = m.Width
+		imgs[i].URL = m.URL
+	}
+	return imgs
+}
+
 func (i Image) ThumbnailURL() string {
-	return i.URL
+	return i.URL + "=s240"
 }
 func (i Image) SmallThumbnailURL() string {
-	return i.URL
+	return i.URL + "=s114"
 }
 
 func handleMeta(w http.ResponseWriter, r *http.Request) {
@@ -395,12 +445,15 @@ func handleImagesItem(w http.ResponseWriter, r *http.Request) {
 			log.Errorf(c, "json encode: %s", err.Error())
 		}
 	case "DELETE":
-		log.Warningf(c, "image file not deleted: %s", id)
 		err := datastore.Delete(c, key)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			log.Errorf(c, "delete image: %s", err.Error())
 			return
+		}
+		err = blobstore.Delete(c, appengine.BlobKey(id))
+		if err != nil {
+			log.Warningf(c, "delete image '%s': %s", id, err.Error())
 		}
 		w.WriteHeader(204)
 	case "PUT":
@@ -423,6 +476,112 @@ func handleImagesItem(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(204)
 	default:
 		http.Error(w, "Valid methods are GET, DELETE and PUT", http.StatusMethodNotAllowed)
+		return
+	}
+}
+
+func handleFiles(w http.ResponseWriter, r *http.Request) {
+	c := appengine.NewContext(r)
+
+	switch r.Method {
+	case "POST":
+		blobs, _, err := blobstore.ParseUpload(r)
+		if err != nil {
+			http.Error(w, "bad request", http.StatusBadRequest)
+			log.Errorf(c, "bad request: %s", err.Error())
+			return
+		}
+
+		url, err := blobstore.UploadURL(c, "/admin/files", nil)
+		if err == nil {
+			w.Header().Set("UploadURL", url.String())
+		}
+
+		files := make([]File, 0, 20)
+		for _, infos := range blobs {
+			for _, info := range infos {
+				var file File
+				file.Name = info.Filename
+				fileURL, err := aimage.ServingURL(c, info.BlobKey, nil)
+				if err != nil {
+					log.Errorf(c, "failed to get serving url for blob '%s': %s", info.BlobKey, err.Error())
+					http.Error(w, err.Error(), http.StatusInternalServerError)
+					return
+				}
+				file.URL = fileURL.String()
+				file.ID = string(info.BlobKey)
+				file.Size = info.Size
+				files = append(files, file)
+			}
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		err = json.NewEncoder(w).Encode(&files)
+		if err != nil {
+			log.Errorf(c, "json encode: %s", err.Error())
+		}
+	case "GET":
+		var files []File
+		_, err := datastore.NewQuery("File").GetAll(c, &files)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			log.Errorf(c, "query files: %s", err.Error())
+			return
+		}
+		w.Header().Set("Content-Type", "application/json")
+		if files == nil {
+			files = []File{}
+		}
+		err = json.NewEncoder(w).Encode(&files)
+		if err != nil {
+			log.Errorf(c, "json encode: %s", err.Error())
+		}
+	default:
+		http.Error(w, "Valid methods are GET and POST", http.StatusMethodNotAllowed)
+		return
+	}
+}
+
+func handleFilesItem(w http.ResponseWriter, r *http.Request) {
+	id := r.URL.Path
+	if id == "" {
+		w.WriteHeader(404)
+		return
+	}
+	c := appengine.NewContext(r)
+	key := datastore.NewKey(c, "File", id, 0, nil)
+	switch r.Method {
+	case "GET":
+		var file File
+		err := datastore.Get(c, key, &file)
+		if err == datastore.ErrNoSuchEntity {
+			http.NotFound(w, r)
+			return
+		}
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			log.Errorf(c, "query file: %s", err.Error())
+			return
+		}
+		w.Header().Set("Content-Type", "application/json")
+		err = json.NewEncoder(w).Encode(&file)
+		if err != nil {
+			log.Errorf(c, "json encode: %s", err.Error())
+		}
+	case "DELETE":
+		err := datastore.Delete(c, key)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			log.Errorf(c, "delete file: %s", err.Error())
+			return
+		}
+		err = blobstore.Delete(c, appengine.BlobKey(id))
+		if err != nil {
+			log.Warningf(c, "delete file '%s': %s", id, err.Error())
+		}
+		w.WriteHeader(204)
+	default:
+		http.Error(w, "Valid methods are GET and DELETE", http.StatusMethodNotAllowed)
 		return
 	}
 }

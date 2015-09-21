@@ -12,7 +12,9 @@ module.exports = {
 	module: {
 		loaders: [
 			{ test: /\.jsx?$/, include: path.join(__dirname, "browser"), loader: "babel", query: { stage: 0 } },
-			{ test: /\.css$/, loader: "style!css" }
+			{ test: /\.css$/, loader: "style!css" },
+			{ test: /\.scss$/, loader: "style!css!sass"},
+			{ test: /\.(svg|eot|woff2?|ttf|png|gif)$/, loader: "url" },
 		]
 	}
 };

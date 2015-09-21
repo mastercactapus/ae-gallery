@@ -5,7 +5,7 @@ var MetaActions = Reflux.createActions({
 	"loadMeta": { children: ["completed", "failed"] },
 	"updateMeta": { children: ["completed", "failed"] },
 	"reorderBucket": {},
-	"setTitle": {},
+	"editMeta": {},
 });
 
 MetaActions.loadMeta.listen(function(){

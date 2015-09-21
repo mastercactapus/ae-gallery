@@ -23,7 +23,7 @@ import ImageStore from "./images/store.js";
 import ImageActions from "./images/actions.js";
 
 import { DragSource, DropTarget, DragDropContext } from "react-dnd"
-import HTML5Backend, {NativeTypes} from "react-dnd/modules/backends/HTML5";
+import {NativeTypes} from "react-dnd/modules/backends/HTML5";
 
 const bucketSource = {
 	beginDrag(props) {
@@ -140,6 +140,9 @@ export class Image extends React.Component {
 		});
 	}
 
+	componentWillUnmount() {
+		this.unsubscribeImage();
+	}
 	changeEnabled(e,t) {
 		ImageActions.setImageEnabled(this.state.ID, t);
 		e.stopPropagation();
@@ -153,9 +156,6 @@ export class Image extends React.Component {
 		e.stopPropagation();
 	}
 
-	componentWillUnmount() {
-		this.unsubscribeImage();
-	}
 	render() {
 		const { connectDragPreview, connectDragSource, connectDropTarget, isDragging } = this.props;
 		var ID = this.props.ID;
@@ -255,7 +255,6 @@ export class Bucket extends React.Component {
 	}
 }
 
-@DragDropContext(HTML5Backend)
 export default class BucketEditor extends React.Component {
 	constructor() {
 		super();

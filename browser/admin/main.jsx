@@ -16,6 +16,10 @@ import {Tabs, Tab} from "material-ui";
 import SiteEditor from "./site-editor.jsx";
 import BucketEditor from "./bucket-editor.jsx";
 import UploadManager from "./upload-manager.jsx";
+import ProfileEditor from "./profile-editor.jsx";
+
+import HTML5Backend from 'react-dnd/modules/backends/HTML5';
+import { DragDropContext } from 'react-dnd';
 
 import API from "./api.js";
 window.API = API;
@@ -51,10 +55,11 @@ var Main = React.createClass({
 		return <div><Tabs value={this.state.tab} onChange={this.tabChange}>
 			<Tab label="Site" value="site"><SiteEditor /></Tab>
 			<Tab label="Buckets" value="buckets"><BucketEditor /></Tab>
+			<Tab label="Profile" value="profile"><ProfileEditor /></Tab>
 		</Tabs>
 		<UploadManager />
 		</div>
 	}
 });
 
-module.exports = Main;
+module.exports = DragDropContext(HTML5Backend)(Main);

@@ -9,16 +9,26 @@ var MetaStore = Reflux.createStore({
 		this.state = {
 			Title: "",
 			Buckets: [],
+			Links: []
 		};
 		this.pendingState = null;
 	},
 	onLoadMetaCompleted: function(result) {
-		this.state.Title = result.Title;
-		this.state.Buckets = result.Buckets;
+		_.extend(this.state, result);
+		if (!this.state.Links) {
+			this.state.Links = [];
+		}
 		this.trigger(this.state);
 	},
 	onUpdateMetaFailed: function(result) {
 		MetaActions.loadMeta();
+	},
+	onUpdateMeta: function(meta) {
+		if (!meta.Links) {
+			meta.Links = [];
+		}
+		this.state = meta;
+		this.trigger(this.state);
 	},
 	onReorderBucket: function(oldID, newID) {
 		var oldIndex = this.state.Buckets.indexOf(oldID);
@@ -39,10 +49,8 @@ var MetaStore = Reflux.createStore({
 	onRemoveBucketFailed: function() {
 		MetaActions.loadMeta();
 	},
-	onSetTitle: function(newTitle) {
-		this.state.Title = newTitle;
-		MetaActions.updateMeta(this.state);
-		this.trigger(this.state);
+	onEditMeta: function(val) {
+		MetaActions.updateMeta(_.defaults(val, this.state));
 	},
 
 	get: function() {

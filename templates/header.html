@@ -1,0 +1,25 @@
+<div class="header-container">
+	<header>
+	{{if .LogoURL}}
+	<style>
+	h1.logo {
+		background-image: url({{.LogoURL}})
+	}
+	</style>
+	{{end}}
+		<h1 class="logo">{{.HeaderText}}</h1>
+		<nav>
+			<ul>
+				<li><a href="/">Gallery</a></li>
+
+				{{range .Links}}
+				<li><a target="_blank" href="{{.URL}}">{{.Label}}</a></li>
+				{{end}}
+
+				<li><a href="/profile">Profile</a></li>
+				<li><a href="/contact">Contact</a></li>
+			</ul>
+		</nav>
+		<div class="separator"></div>
+	</header>
+</div>
