@@ -7,17 +7,21 @@ handlers:
 - url: /admin
   login: admin
   script: _go_app
+  secure: always
 
 - url: /admin/.+
   script: _go_app
   login: admin
   auth_fail_action: unauthorized
+  secure: always
 
 - url: /public
   static_dir: public
+  login: admin
 
 - url: /.*
   script: _go_app
+  login: admin
 
 skip_files:
 - ^(.*/)?node_modules/.*
