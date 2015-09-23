@@ -5,6 +5,9 @@ import {} from "photoswipe/dist/default-skin/default-skin.css";
 import PhotoSwipe from "photoswipe/dist/photoswipe.js";
 import PhotoSwipeUI from "photoswipe/dist/photoswipe-ui-default.js";
 
+import $ from "jquery";
+import "./lib/materialize-src/js/velocity.min.js";
+import "./lib/materialize-src/js/sideNav.js";
 
 function launchGallery(galleryIndex, imageIndex, rect) {
     var pswp = document.getElementById("pswp");
@@ -59,6 +62,7 @@ function init() {
         var b = buckets[i];
         b.addEventListener("click", click.bind(null, i));
     }
+    $(".button-collapse").sideNav();
 }
 
 

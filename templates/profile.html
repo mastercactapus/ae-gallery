@@ -4,12 +4,13 @@
 	<meta charset="utf-8">
 	<title>Profile - {{.Title}}</title>
 	<script src="public/main-bundle.js"></script>
+	{{template "global-head.html" .}}
 </head>
 <body>
 	{{template "header.html" .}}
 
-	<div class="main-container">
-		{{markdown .Profile}}
+	<div class="container">
+		<p class="flow-text">{{markdown .Profile}}</p>
 	</div>
 </body>
 </html>

@@ -24,7 +24,8 @@ type Meta struct {
 	HeaderText   string
 	LogoURL      string
 	Profile      string
-	BucketsFull  []Bucket `datastore:"-"`
+	Path         string   `datastore:"-",json:"-"`
+	BucketsFull  []Bucket `datastore:"-",json:"-"`
 }
 
 type Link struct {
@@ -45,7 +46,7 @@ type Bucket struct {
 	Caption    string
 	Enabled    bool
 	Images     []string
-	ImagesFull []Image `datastore:"-"`
+	ImagesFull []Image `datastore:"-",json:"-"`
 }
 
 type SafeBucket struct {

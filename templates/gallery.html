@@ -1,39 +1,49 @@
 <script>var foo={{.BucketsFull}}</script>
+
 <div class="main-container">
 	{{range .BucketsFull}}
-		<h2>{{.Name}}</h2>
-		<p>{{.Caption}}</p>
-		<div class="gallery" itemscope itemtype="http://schema.org/ImageGallery">
-			<meta itemprop="headline" content="{{.Name}}">
-			<meta itemprop="description" content="{{.Caption}}">
-			<meta itemprop="author">
+		<div class="row">
+			<div class="col s12">
+				<div class="card small gallery" itemscope itemtype="http://schema.org/ImageGallery">
+					<meta itemprop="headline name" content="{{.Name}}">
+					<meta itemprop="author" content="">
+					<div class="card-image" itemprop="associatedMedia" itemscope itemtype="http://schema.org/ImageObject">
+						{{with index .ImagesFull 0}}
+						<meta itemprop="width" content="{{.Width}}">
+						<meta itemprop="height" content="{{.Height}}">
+						<meta itemprop="caption description" content="{{.Caption}}">
+						<meta itemprop="headline name" content="{{.Name}}">
+						<a href="{{.URL}}" itemprop="contentUrl">
+							<img data-index="0" src="{{.URL}}=s300" itemprop="thumbnail" alt="{{.Name}}" >
+						{{end}}
+							<span class="card-title">{{.Name}}</span>
+						</a>
+					</div>
+					<div class="card-content">
+					<p class="flow-text" itemprop="description">{{.Caption}}</p>
+					{{range $i, $img := .ImagesFull}}
+						{{if gt $i 0}}
+							<span itemprop="associatedMedia" itemscope itemtype="http://schema.org/ImageObject">
+								<meta itemprop="width" content="{{.Width}}">
+								<meta itemprop="height" content="{{.Height}}">
+								<meta itemprop="width" content="{{.Width}}">
+								<meta itemprop="caption description" content="{{.Caption}}">
+								<meta itemprop="headline name" content="{{.Name}}">
+								<meta itemprop="thumbnailUrl" content="{{.URL}}=s240">
 
-			{{range $i, $img := .ImagesFull}}
-				{{if eq $i 0}}
-			<figure class="largethumb" itemprop="associatedMedia" itemscope itemtype="http://schema.org/ImageObject">
-				{{else if lt $i 5}}
-			<figure class="smallthumb" itemprop="associatedMedia" itemscope itemtype="http://schema.org/ImageObject">
-				{{else}}
-			<figure class="nothumb" itemprop="associatedMedia" itemscope itemtype="http://schema.org/ImageObject">
-				{{end}}     
-				<a href="{{.URL}}" itemprop="contentUrl">
-					{{if eq $i 0}}
-						<img data-index="{{$i}}" src="{{.URL}}=s240" itemprop="thumbnail" alt="{{.Name}}" />
-					{{else if lt $i 5}}
-						<img data-index="{{$i}}" src="{{.URL}}=s114" itemprop="thumbnail" alt="{{.Name}}" />
-					{{else}}
-						<meta itemprop="thumbnailUrl" content="{{.URL}}=s240">
+								<a href="{{.URL}}" itemprop="contentUrl">
+								{{if lt $i 3}}
+									<img data-index="{{$i}}" src="{{.URL}}=s114" alt="{{.Name}}">
+								{{else if lt $i 8}}
+									<img data-index="{{$i}}" class="hide-on-med-and-down" src="{{.URL}}=s114" alt="{{.Name}}">
+								{{end}}
+								</a>
+							</span>
+						{{end}}
 					{{end}}
-				</a>
-
-				<meta itemprop="width" content="{{.Width}}">
-				<meta itemprop="height" content="{{.Height}}">
-				<p>{{.Name}}</p>
-				<figcaption itemprop="caption description" style="display: none">
-					{{.Caption}}
-				</figcaption>
-			</figure>
-			{{end}}
+					</div>
+				</div>
+			</div>
 		</div>
 	{{end}}
 </div>

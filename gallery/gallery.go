@@ -62,6 +62,7 @@ func handleProfile(w http.ResponseWriter, r *http.Request) {
 		log.Errorf(c, "get meta: %s", err.Error())
 		return
 	}
+	m.Path = r.URL.Path
 	err = t.ExecuteTemplate(w, "profile.html", &m)
 	if err != nil {
 		log.Errorf(c, "render profile.html: %s", err.Error())
@@ -77,6 +78,7 @@ func handleContact(w http.ResponseWriter, r *http.Request) {
 		log.Errorf(c, "get meta: %s", err.Error())
 		return
 	}
+	m.Path = r.URL.Path
 	err = t.ExecuteTemplate(w, "contact.html", &m)
 	if err != nil {
 		log.Errorf(c, "render contact.html: %s", err.Error())
@@ -143,6 +145,7 @@ func handleIndex(w http.ResponseWriter, r *http.Request) {
 			m.BucketsFull = append(m.BucketsFull, *bk)
 		}
 	}
+	m.Path = r.URL.Path
 
 	err = t.ExecuteTemplate(w, "index.html", &m)
 	if err != nil {

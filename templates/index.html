@@ -4,10 +4,12 @@
 	<meta charset="utf-8">
 	<title>{{.Title}}</title>
 	<script src="public/main-bundle.js"></script>
+	{{template "global-head.html" .}}
 </head>
 <body>
 	{{template "header.html" .}}
-
+	<div class="container">
 	{{template "gallery.html" .}}
+	</div>
 </body>
 </html>

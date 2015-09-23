@@ -9,7 +9,7 @@ var injectTapEventPlugin = require("react-tap-event-plugin");
 //https://github.com/zilverline/react-tap-event-plugin
 injectTapEventPlugin();
 
-import "./main.css";
+import "./main.scss";
 
 import {Tabs, Tab} from "material-ui";
 
@@ -20,6 +20,7 @@ import ProfileEditor from "./profile-editor.jsx";
 
 import HTML5Backend from 'react-dnd/modules/backends/HTML5';
 import { DragDropContext } from 'react-dnd';
+
 
 import API from "./api.js";
 window.API = API;

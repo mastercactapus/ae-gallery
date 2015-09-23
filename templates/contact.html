@@ -4,11 +4,37 @@
 	<meta charset="utf-8">
 	<title>Contact - {{.Title}}</title>
 	<script src="public/main-bundle.js"></script>
+	{{template "global-head.html" .}}
 </head>
 <body>
 	{{template "header.html" .}}
 
-	<div class="main-container">
+	<div class="container">
+	<div class="row">
+		<form class="col s12" action="/contact/send" method="POST">
+			<div class="row">
+				<div class="input-field col s12">
+					<input placeholder="Your name" id="name" type="text" class="validate">
+					<label for="name">Name</label>
+				</div>
+			</div>
+			<div class="row">
+				<div class="input-field col s12">
+					<input placeholder="E-Mail Address" id="email" type="email" class="validate">
+					<label for="email">E-Mail</label>
+				</div>
+			</div>
+			<div class="row">
+				<div class="input-field col s12">
+					<textarea id="message" class="materialize-textarea"></textarea>
+					<label for="message">Message</label>
+				</div>
+			</div>
+			<button class="btn waves-effect waves-light" type="submit" name="action">Submit
+				<i class="material-icons right">send</i>
+			</button>
+		</form>
+	</div>
 	</div>
 </body>
 </html>
