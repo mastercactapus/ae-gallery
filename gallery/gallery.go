@@ -6,11 +6,21 @@ import (
 	"google.golang.org/appengine/blobstore"
 	"google.golang.org/appengine/datastore"
 	"google.golang.org/appengine/log"
+	aemail "google.golang.org/appengine/mail"
 	"html/template"
 	"net/http"
+	"net/mail"
+	"strings"
 )
 
 var t = template.Must(template.New("main").Funcs(template.FuncMap{"markdown": markdown}).ParseGlob("templates/*.html"))
+
+type ContactData struct {
+	*Meta
+	ErrorMessage         string
+	SuccessMessage       string
+	Name, Email, Message string
+}
 
 func markdown(data string) template.HTML {
 	return template.HTML(blackfriday.MarkdownCommon([]byte(data)))
@@ -27,6 +37,7 @@ func init() {
 	http.Handle("/admin/files/", http.StripPrefix("/admin/files/", http.HandlerFunc(handleFilesItem)))
 
 	http.HandleFunc("/admin", handleAdminPage)
+	http.HandleFunc("/contact/send", handleContactSend)
 	http.HandleFunc("/contact", handleContact)
 	http.HandleFunc("/profile", handleProfile)
 	http.HandleFunc("/", handleIndex)
@@ -69,6 +80,68 @@ func handleProfile(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+func handleContactSend(w http.ResponseWriter, r *http.Request) {
+	c := appengine.NewContext(r)
+	var m Meta
+	err := datastore.Get(c, datastore.NewKey(c, "Meta", "main", 0, nil), &m)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		log.Errorf(c, "get meta: %s", err.Error())
+		return
+	}
+	m.Path = r.URL.Path
+	name := strings.TrimSpace(r.FormValue("name"))
+	email := strings.TrimSpace(r.FormValue("email"))
+	message := strings.TrimSpace(r.FormValue("message"))
+	var cd ContactData
+	cd.Meta = &m
+	cd.Name = name
+	cd.Email = email
+	cd.Message = message
+
+	defer func() {
+		err = t.ExecuteTemplate(w, "contact.html", cd)
+		if err != nil {
+			log.Errorf(c, "render contact.html: %s", err.Error())
+		}
+	}()
+
+	if name == "" {
+		cd.ErrorMessage = "Name is required"
+		return
+	}
+	addr, err := mail.ParseAddress(email)
+	if err != nil {
+		cd.ErrorMessage = "Valid email address is required: " + err.Error()
+		return
+	}
+	if message == "" {
+		cd.ErrorMessage = "Message is required"
+		return
+	}
+	addr.Name = name
+
+	msg := &aemail.Message{
+		Sender:  addr.String(),
+		To:      []string{m.ContactEmail},
+		Subject: "Contact",
+		Body:    message,
+	}
+
+	err = aemail.Send(c, msg)
+	if err != nil {
+		cd.ErrorMessage = "Could not send message, try again later"
+		log.Errorf(c, "send message: %s", err.Error())
+		return
+	}
+
+	cd.Email = ""
+	cd.Name = ""
+	cd.Message = ""
+	cd.SuccessMessage = "Message Sent"
+
+}
+
 func handleContact(w http.ResponseWriter, r *http.Request) {
 	c := appengine.NewContext(r)
 	var m Meta
@@ -79,7 +152,8 @@ func handleContact(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	m.Path = r.URL.Path
-	err = t.ExecuteTemplate(w, "contact.html", &m)
+	cd := &ContactData{Meta: &m}
+	err = t.ExecuteTemplate(w, "contact.html", cd)
 	if err != nil {
 		log.Errorf(c, "render contact.html: %s", err.Error())
 	}

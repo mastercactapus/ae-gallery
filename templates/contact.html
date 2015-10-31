@@ -3,30 +3,38 @@
 <head>
 	<meta charset="utf-8">
 	<title>Contact - {{.Title}}</title>
-	<script src="public/main-bundle.js"></script>
+	<script src="/public/main-bundle.js"></script>
 	{{template "global-head.html" .}}
 </head>
 <body>
 	{{template "header.html" .}}
 
 	<div class="container">
+
+	{{if ne .ErrorMessage ""}}
+		<p style="color:red">{{.ErrorMessage}}</p>
+	{{end}}
+	{{if ne .SuccessMessage ""}}
+		<p style="color:green">{{.SuccessMessage}}</p>
+	{{end}}
+
 	<div class="row">
 		<form class="col s12" action="/contact/send" method="POST">
 			<div class="row">
 				<div class="input-field col s12">
-					<input placeholder="Your name" id="name" type="text" class="validate">
+					<input placeholder="Your name" name="name" id="name" type="text" class="validate" value="{{.Name}}">
 					<label for="name">Name</label>
 				</div>
 			</div>
 			<div class="row">
 				<div class="input-field col s12">
-					<input placeholder="E-Mail Address" id="email" type="email" class="validate">
+					<input placeholder="E-Mail Address" name="email" id="email" type="email" class="validate" value="{{.Email}}">
 					<label for="email">E-Mail</label>
 				</div>
 			</div>
 			<div class="row">
 				<div class="input-field col s12">
-					<textarea id="message" class="materialize-textarea"></textarea>
+					<textarea id="message" name="message" class="materialize-textarea">{{.Message}}</textarea>
 					<label for="message">Message</label>
 				</div>
 			</div>
