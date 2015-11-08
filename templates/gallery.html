@@ -13,7 +13,7 @@
 						<meta itemprop="height" content="{{.Height}}">
 						<meta itemprop="caption description" content="{{.Caption}}">
 						<meta itemprop="headline name" content="{{.Name}}">
-						<a href="{{.URL}}" itemprop="contentUrl">
+						<a href="{{.URL}}=s4000" itemprop="contentUrl">
 							<img data-index="0" src="{{.URL}}=s600" itemprop="thumbnail" alt="{{.Name}}" >
 						{{end}}
 							<span class="card-title">{{.Name}}</span>
@@ -31,7 +31,7 @@
 								<meta itemprop="headline name" content="{{.Name}}">
 								<meta itemprop="thumbnailUrl" content="{{.URL}}=s240">
 
-								<a href="{{.URL}}" itemprop="contentUrl">
+								<a href="{{.URL}}=s4000" itemprop="contentUrl">
 								{{if lt $i 3}}
 									<img data-index="{{$i}}" src="{{.URL}}=s114" alt="{{.Name}}">
 								{{else if lt $i 8}}
