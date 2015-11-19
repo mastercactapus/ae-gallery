@@ -8,8 +8,11 @@ import (
 	"google.golang.org/appengine/log"
 	aemail "google.golang.org/appengine/mail"
 	"html/template"
+	"io"
+	"mime"
 	"net/http"
 	"net/mail"
+	"path"
 	"strings"
 )
 
@@ -40,6 +43,7 @@ func init() {
 	http.HandleFunc("/contact/send", handleContactSend)
 	http.HandleFunc("/contact", handleContact)
 	http.HandleFunc("/profile", handleProfile)
+	http.Handle("/blob/", http.StripPrefix("/blob/", http.HandlerFunc(handleBlobFile)))
 	http.HandleFunc("/", handleIndex)
 }
 
@@ -140,6 +144,26 @@ func handleContactSend(w http.ResponseWriter, r *http.Request) {
 	cd.Message = ""
 	cd.SuccessMessage = "Message Sent"
 
+}
+
+func handleBlobFile(w http.ResponseWriter, r *http.Request) {
+	c := appengine.NewContext(r)
+	key := datastore.NewKey(c, "File", r.URL.Path, 0, nil)
+
+	var file File
+	err := datastore.Get(c, key, &file)
+
+	if err != nil {
+		http.NotFound(w, r)
+		return
+	}
+
+	w.Header().Set("Content-Type", mime.TypeByExtension(path.Ext(file.Name)))
+
+	_, err = io.Copy(w, blobstore.NewReader(c, appengine.BlobKey(r.URL.Path)))
+	if err != nil {
+		log.Errorf(c, "stream blob: %s", err.Error())
+	}
 }
 
 func handleContact(w http.ResponseWriter, r *http.Request) {
