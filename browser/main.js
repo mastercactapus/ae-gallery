@@ -14,7 +14,7 @@ function launchGallery(galleryIndex, imageIndex, rect) {
     var ui = "PhotoSwipeUI_Default";
     var items = Buckets[galleryIndex].Images.map(function(img,idx){
         var res = {
-            src: img.URL + "=s4000",
+            src: img.URL + "=s2000",
             w: img.Width,
             h: img.Height,
             title: img.Name + "<br><small>" + img.Caption + "</small>",
