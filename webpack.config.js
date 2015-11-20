@@ -9,6 +9,11 @@ module.exports = {
 			path.resolve(__dirname,"browser/lib/materialize-src/sass/materialize.scss"),
 			path.resolve(__dirname,"browser/lib/materialize-src/js/bin/materialize.js"),
 		],
+		"style-bundle.js": [
+			path.resolve(__dirname, "browser/main.scss"),
+			"photoswipe/dist/photoswipe.css",
+			"photoswipe/dist/default-skin/default-skin.css"
+		],
 		"admin-bundle.js": path.resolve(__dirname, "browser/admin.jsx"),
 	},
 	output: {

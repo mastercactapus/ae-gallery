@@ -1,7 +1,3 @@
-import {} from "./main.scss";
-import {} from "photoswipe/dist/photoswipe.css";
-import {} from "photoswipe/dist/default-skin/default-skin.css";
-
 import PhotoSwipe from "photoswipe/dist/photoswipe.js";
 import PhotoSwipeUI from "photoswipe/dist/photoswipe-ui-default.js";
 
